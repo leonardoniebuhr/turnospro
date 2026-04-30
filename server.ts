@@ -44,6 +44,61 @@ async function startServer() {
 
   // --- API Routes ---
 
+  // --- Bootstrap (primer superadmin) ---
+  // Render Free no incluye Shell: este endpoint crea el usuario inicial de forma segura.
+  // Se habilita SOLO si existe BOOTSTRAP_TOKEN en el entorno.
+  // Uso: POST /api/admin/bootstrap con header "x-bootstrap-token" y body { email, password, nombre, apellido, dni }
+  app.post('/api/admin/bootstrap', async (req, res) => {
+    const token = process.env.BOOTSTRAP_TOKEN;
+    if (!token) return res.status(404).json({ message: 'Not found' });
+
+    const provided = String(req.headers['x-bootstrap-token'] || '');
+    if (!provided || provided !== token) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { email, password, nombre, apellido, dni } = req.body || {};
+    if (!email || !password || !nombre || !apellido || !dni) {
+      return res.status(400).json({ message: 'Faltan datos obligatorios.' });
+    }
+
+    try {
+      const existingAdmin = await prisma.user.findFirst({ where: { rol: 'SUPERADMIN' } });
+      if (existingAdmin) {
+        return res.status(409).json({ message: 'Ya existe un SUPERADMIN. Deshabilitá BOOTSTRAP_TOKEN.' });
+      }
+
+      const dup = await prisma.user.findFirst({
+        where: { OR: [{ email: String(email).trim().toLowerCase() }, { dni: String(dni).trim() }] }
+      });
+      if (dup) return res.status(400).json({ message: 'El correo o el DNI ya están registrados.' });
+
+      const passwordHash = await bcrypt.hash(String(password), 10);
+      const user = await prisma.user.create({
+        data: {
+          email: String(email).trim().toLowerCase(),
+          passwordHash,
+          nombre: String(nombre).trim(),
+          apellido: String(apellido).trim(),
+          dni: String(dni).trim(),
+          rol: 'SUPERADMIN'
+        }
+      });
+
+      const jwtToken = jwt.sign(
+        { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre },
+        JWT_SECRET,
+        { expiresIn: '8h' }
+      );
+
+      return res.json({
+        token: jwtToken,
+        user: { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre, apellido: user.apellido }
+      });
+    } catch (error) {
+      console.error('Error en bootstrap:', error);
+      return res.status(500).json({ message: 'No se pudo crear el superadmin.' });
+    }
+  });
+
   // --- Global Config ---
   app.get('/api/config', async (req, res) => {
     let config = await prisma.configGlobal.findUnique({ where: { id: 'singleton' } });

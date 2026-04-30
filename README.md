@@ -2,19 +2,40 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Run and deploy your AI Studio app
+## TurnosPro
 
-This contains everything you need to run your app locally.
+### Producción (Render + Neon) sin Shell
 
-View your app in AI Studio: https://ai.studio/apps/10e6df5d-631d-4d0a-a4a2-5e7a604831bf
+En Render Free no hay consola/shell para ejecutar `npm run seed`. Para crear el **primer** usuario `SUPERADMIN`, usá el endpoint de bootstrap protegido por token.
 
-## Run Locally
+1. En Render → Service → **Environment**
+   - Seteá `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`
+   - Agregá `BOOTSTRAP_TOKEN` (un string largo y aleatorio, solo temporal)
+2. Deploy / redeploy del servicio.
+3. Llamá una sola vez a:
 
-**Prerequisites:**  Node.js
+`POST https://turnospro.onrender.com/api/admin/bootstrap`
 
+Header:
+- `x-bootstrap-token: <BOOTSTRAP_TOKEN>`
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Body JSON:
+```json
+{
+  "email": "admin@consultorios.com",
+  "password": "admin123",
+  "nombre": "Admin",
+  "apellido": "Principal",
+  "dni": "12345678"
+}
+```
+
+4. **Después** borrá `BOOTSTRAP_TOKEN` de Render para deshabilitar el bootstrap.
+
+### Local
+
+1. `npm install`
+2. Copiá `.env.example` a `.env` y ajustá `DATABASE_URL` (Postgres).
+3. `npx prisma db push`
+4. `npm run seed`
+5. `npm run dev`
