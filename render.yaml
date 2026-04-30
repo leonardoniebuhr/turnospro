@@ -1,0 +1,23 @@
+# Blueprint para https://render.com (plan gratuito).
+# 1) Creá una base PostgreSQL gratuita en https://neon.tech y copiá DATABASE_URL.
+# 2) En Render: New → Blueprint → conectá este repo; luego en Environment agregá:
+#    DATABASE_URL, JWT_SECRET (obligatorios).
+# 3) Tras el primer deploy: Shell → npx prisma db push && npm run seed
+services:
+  - type: web
+    name: turnospro
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma db push && npm run start
+    healthCheckPath: /api/config
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false

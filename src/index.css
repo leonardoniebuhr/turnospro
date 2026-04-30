@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "react-big-calendar/lib/css/react-big-calendar.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+.rbc-calendar {
+  font-family: inherit;
+  border-radius: 1rem;
+  background: white;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+}
+
+.rbc-event {
+  border-radius: 6px !important;
+  border: none !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+}
+
+.rbc-today {
+  background-color: #f8fafc !important;
+}

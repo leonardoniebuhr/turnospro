@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Role: SUPERADMIN, ADMIN_CONSULTORIO, PROFESIONAL, PACIENTE, RECEPCIONISTA
+// AppointmentStatus: PENDIENTE, CONFIRMADO, CANCELADO_PACIENTE, CANCELADO_PROFESIONAL, COMPLETADO, NO_SHOW
+// AppointmentType: PRESENCIAL, VIRTUAL
+// PaymentStatus: PENDIENTE, PROCESANDO, COMPLETADO, FALLIDO, REEMBOLSADO
+// PaymentMethod: MERCADOPAGO, EFECTIVO, TRANSFERENCIA, OBRA_SOCIAL
+// NotificationType: WHATSAPP, EMAIL, SMS
+// NotificationStatus: PENDIENTE, ENVIADO, FALLIDO
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  apellido     String
+  dni          String   @unique
+  telefono     String?
+  rol          String   @default("PACIENTE")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profesional Profesional?
+  paciente    Paciente?
+}
+
+model Profesional {
+  id                    String   @id @default(uuid())
+  usuarioId             String   @unique
+  especialidad          String
+  matriculaNacional     String
+  matriculaProvincial   String?
+  duracionTurnoDefault  Int      @default(30)
+  colorCalendario       String   @default("#3b82f6")
+  biografia             String?
+  fotoUrl               String?
+  activo                Boolean  @default(true)
+  
+  // Aranceles y Datos de Pago
+  arancelParticular     Float    @default(0)
+  arancelObraSocial     Float    @default(0)
+  aliasTransferencia    String?
+  cbuTransferencia      String?
+
+  usuario        User                  @relation(fields: [usuarioId], references: [id])
+  configAgendas  ConfiguracionAgenda[]
+  turnos         Turno[]
+  coberturas     CoberturaObraSocial[]
+  recetas        Receta[]
+}
+
+model Consultorio {
+  id          String   @id @default(uuid())
+  numero      Int      @unique
+  nombre      String
+  equipamiento String   // JSON string of items
+  capacidad   Int      @default(1)
+  ubicacion   String?
+  activo      Boolean  @default(true)
+
+  configAgendas ConfiguracionAgenda[]
+  turnos        Turno[]
+}
+
+model ConfiguracionAgenda {
+  id            String   @id @default(uuid())
+  profesionalId String
+  consultorioId String
+  diaSemana     Int      // 0-6
+  horaInicio    String   // HH:mm
+  horaFin       String   // HH:mm
+  duracionTurno Int?
+  activo        Boolean  @default(true)
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+  consultorio Consultorio @relation(fields: [consultorioId], references: [id])
+}
+
+model Paciente {
+  id                         String   @id @default(uuid())
+  usuarioId                  String?  @unique
+  nombre                     String
+  apellido                   String
+  dni                        String   @unique
+  telefono                   String
+  email                      String?
+  fechaNacimiento            DateTime
+  obraSocialId               String?
+  numeroAfiliado             String?
+  contactoEmergenciaNombre   String?
+  contactoEmergenciaTelefono String?
+  alergias                   String?
+  antecedentes               String?
+  historiaClinica            String?
+  observaciones              String?
+  direccion                  String?
+  createdAt                  DateTime @default(now())
+
+  usuario    User?       @relation(fields: [usuarioId], references: [id])
+  obraSocial ObraSocial? @relation(fields: [obraSocialId], references: [id])
+  turnos     Turno[]
+  recetas    Receta[]
+}
+
+model Turno {
+  id               String            @id @default(uuid())
+  pacienteId       String
+  profesionalId    String
+  consultorioId    String
+  fechaHoraInicio  DateTime
+  fechaHoraFin     DateTime
+  estado           String            @default("PENDIENTE")
+  tipo             String            @default("PRESENCIAL")
+  motivoConsulta   String?
+  notas            String?
+  precio           Float             @default(0)
+  esSobreturno     Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  canalReserva     String?           @default("INTERNO")
+  esPublico        Boolean           @default(false)
+  updatedAt        DateTime          @updatedAt
+  
+  paciente        Paciente         @relation(fields: [pacienteId], references: [id])
+  profesional     Profesional      @relation(fields: [profesionalId], references: [id])
+  consultorio     Consultorio      @relation(fields: [consultorioId], references: [id])
+  pago            Pago?
+  notificaciones  Notificacion[]
+}
+
+model Pago {
+  id                    String        @id @default(uuid())
+  turnoId              String        @unique
+  monto                 Float
+  metodo                String        @default("EFECTIVO")
+  estadoPago            String        @default("PENDIENTE")
+  mercadopagoPrefId     String?
+  mercadopagoPaymentId  String?
+  fechaPago             DateTime?
+  createdAt             DateTime      @default(now())
+
+  turno Turno @relation(fields: [turnoId], references: [id])
+}
+
+model Notificacion {
+  id         String             @id @default(uuid())
+  turnoId    String
+  tipo       String             @default("WHATSAPP")
+  estado     String             @default("PENDIENTE")
+  contenido  String
+  fechaEnvio DateTime?
+  errorMsg   String?
+
+  turno Turno @relation(fields: [turnoId], references: [id])
+}
+
+model ObraSocial {
+  id     String   @id @default(uuid())
+  nombre String
+  codigo String   @unique
+  activo Boolean  @default(true)
+
+  pacientes  Paciente[]
+  coberturas CoberturaObraSocial[]
+}
+
+model CoberturaObraSocial {
+  id           String @id @default(uuid())
+  profesionalId String
+  obraSocialId  String
+  precioCoseguro Float @default(0)
+  requiereAutorizacion Boolean @default(false)
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+  obraSocial  ObraSocial  @relation(fields: [obraSocialId], references: [id])
+
+  @@unique([profesionalId, obraSocialId])
+}
+
+model ConfigGlobal {
+  id                  String   @id @default("singleton")
+  nombreClinica       String   @default("TurnosPro")
+  horarioApertura     String   @default("08:00")
+  horarioCierre       String   @default("21:00")
+  diasNoLaborales     String   @default("[]") // JSON array of dates
+  mensajeDefaultTurno String?
+  whatsapp            String?  // WhatsApp de contacto para el centro
+}
+
+model RecetaTemplate {
+  id        String   @id @default(uuid())
+  nombre    String
+  contenido String   @default("")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Receta {
+  id              String   @id @default(uuid())
+  profesionalId   String
+  pacienteId      String
+  contenido       String
+  diagnostico     String?
+  createdAt       DateTime @default(now())
+
+  profesional Profesional @relation(fields: [profesionalId], references: [id])
+  paciente    Paciente    @relation(fields: [pacienteId], references: [id])
+}
