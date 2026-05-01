@@ -48,12 +48,60 @@ async function startServer() {
   // Render Free no incluye Shell: este endpoint crea el usuario inicial de forma segura.
   // Se habilita SOLO si existe BOOTSTRAP_TOKEN en el entorno.
   // Uso: POST /api/admin/bootstrap con header "x-bootstrap-token" y body { email, password, nombre, apellido, dni }
-  app.post('/api/admin/bootstrap', async (req, res) => {
+  //      GET  /api/admin/bootstrap/status (muestra si hay SUPERADMINs y sus emails)
+  //      POST /api/admin/bootstrap/reset-password (resetea la clave de un SUPERADMIN por email)
+  const requireBootstrapToken = (req: any, res: any) => {
     const token = process.env.BOOTSTRAP_TOKEN;
-    if (!token) return res.status(404).json({ message: 'Not found' });
-
+    if (!token) return { ok: false, status: 404, body: { message: 'Not found' } };
     const provided = String(req.headers['x-bootstrap-token'] || '');
-    if (!provided || provided !== token) return res.status(401).json({ message: 'Unauthorized' });
+    if (!provided || provided !== token) return { ok: false, status: 401, body: { message: 'Unauthorized' } };
+    return { ok: true as const };
+  };
+
+  app.get('/api/admin/bootstrap/status', async (req, res) => {
+    const auth = requireBootstrapToken(req, res);
+    if (!auth.ok) return res.status(auth.status).json(auth.body);
+    try {
+      const admins = await prisma.user.findMany({
+        where: { rol: 'SUPERADMIN' },
+        select: { id: true, email: true, nombre: true, apellido: true, dni: true, createdAt: true }
+      });
+      return res.json({
+        hasSuperadmin: admins.length > 0,
+        superadmins: admins.map(a => ({ email: a.email, nombre: a.nombre, apellido: a.apellido, dni: a.dni, createdAt: a.createdAt }))
+      });
+    } catch (error) {
+      console.error('Error en bootstrap status:', error);
+      return res.status(500).json({ message: 'Error al consultar el estado.' });
+    }
+  });
+
+  app.post('/api/admin/bootstrap/reset-password', async (req, res) => {
+    const auth = requireBootstrapToken(req, res);
+    if (!auth.ok) return res.status(auth.status).json(auth.body);
+
+    const { email, password } = req.body || {};
+    if (!email || !password) return res.status(400).json({ message: 'Faltan datos obligatorios.' });
+
+    try {
+      const user = await prisma.user.findUnique({ where: { email: String(email).trim().toLowerCase() } });
+      if (!user || user.rol !== 'SUPERADMIN') return res.status(404).json({ message: 'SUPERADMIN no encontrado.' });
+
+      const passwordHash = await bcrypt.hash(String(password), 10);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash }
+      });
+      return res.json({ ok: true });
+    } catch (error) {
+      console.error('Error en reset-password:', error);
+      return res.status(500).json({ message: 'No se pudo resetear la clave.' });
+    }
+  });
+
+  app.post('/api/admin/bootstrap', async (req, res) => {
+    const auth = requireBootstrapToken(req, res);
+    if (!auth.ok) return res.status(auth.status).json(auth.body);
 
     const { email, password, nombre, apellido, dni } = req.body || {};
     if (!email || !password || !nombre || !apellido || !dni) {
