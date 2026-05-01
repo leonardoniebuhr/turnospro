@@ -117,6 +117,16 @@ export function useUpdatePaciente() {
   });
 }
 
+export function useDeletePaciente() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/pacientes/${id}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pacientes'] })
+  });
+}
+
 export function useUpdateTurno() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -124,7 +134,11 @@ export function useUpdateTurno() {
       const { data } = await api.put(`/turnos/${id}`, payload);
       return data;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['turnos'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['turnos'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    }
   });
 }
 
@@ -134,7 +148,25 @@ export function useDeleteTurno() {
     mutationFn: async (id: string) => {
       await api.delete(`/turnos/${id}`);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['turnos'] })
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['turnos'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    }
+  });
+}
+
+export function useDeletePago() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (turnoId: string) => {
+      await api.delete(`/turnos/${turnoId}/pago`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['turnos'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+    }
   });
 }
 
@@ -189,6 +221,8 @@ export function useCreateTurno() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['turnos'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
     }
   });
 }
@@ -296,6 +330,7 @@ export function useRegistrarPago() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['turnos'] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
     }
   });
 }

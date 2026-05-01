@@ -44,9 +44,10 @@ function HorariosModal({ prof, onClose }: { prof: any, onClose: () => void }) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
       >
-        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Horarios: Dr. {prof.usuario.apellido}</h2>
             <p className="text-slate-500 font-medium">Configura los días y consultorios de atención.</p>
@@ -54,7 +55,7 @@ function HorariosModal({ prof, onClose }: { prof: any, onClose: () => void }) {
           <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400"><X size={24} /></button>
         </div>
 
-        <div className="p-8 space-y-8 overflow-y-auto">
+        <div className="p-8 space-y-8 overflow-y-auto flex-1 min-h-0 overscroll-contain">
           <form onSubmit={handleAdd} className="bg-slate-50 p-6 rounded-3xl border border-slate-100 grid grid-cols-2 lg:grid-cols-4 gap-4 items-end">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Consultorio</label>
@@ -280,14 +281,16 @@ export default function AdminStaff() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Profesional' : 'Nuevo Profesional'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400"><X size={20} /></button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="p-8 space-y-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-sm font-bold text-slate-700">Nombre</label>
@@ -359,7 +362,9 @@ export default function AdminStaff() {
                     </div>
                   </div>
                 </div>
+              </div>
 
+                <div className="p-8 pt-4 border-t border-slate-100 shrink-0">
                 <button 
                   type="submit" 
                   disabled={createMut.isPending || updateMut.isPending}
@@ -367,6 +372,7 @@ export default function AdminStaff() {
                 >
                   {editingId ? 'Guardar Cambios' : 'Crear Profesional'}
                 </button>
+                </div>
               </form>
             </motion.div>
           </div>

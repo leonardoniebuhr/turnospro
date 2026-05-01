@@ -407,14 +407,15 @@ export default function ProfessionalCalendar() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-2xl font-bold text-slate-900">Detalles del Turno</h2>
                 <button onClick={() => setSelectedEvent(null)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400"><X size={20} /></button>
               </div>
 
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 font-bold text-xl">
                     {selectedEvent.resource?.paciente?.nombre?.[0] || 'P'}{selectedEvent.resource?.paciente?.apellido?.[0] || ''}

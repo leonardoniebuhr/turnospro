@@ -12,9 +12,11 @@ import {
   ChevronRight,
   BriefcaseMedical,
   User,
-  ArrowRight
+  ArrowRight,
+  Trash2
 } from 'lucide-react';
-import { useAccounting, useProfesionales } from '../hooks/useMedical';
+import { useAccounting, useProfesionales, useDeleteTurno, useDeletePago } from '../hooks/useMedical';
+import { useAuthStore } from '../store/authStore';
 import { format, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,12 +26,16 @@ import autoTable from 'jspdf-autotable';
 type Period = 'dia' | 'semana' | 'mes' | 'personalizado';
 
 export default function Accounting() {
+  const { user } = useAuthStore();
   const [period, setPeriod] = useState<Period>('mes');
   const [profesionalId, setProfesionalId] = useState('');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
   const { data: profesionales } = useProfesionales();
+  const deleteTurno = useDeleteTurno();
+  const deletePago = useDeletePago();
+  const canManagePago = user && ['SUPERADMIN', 'ADMIN_CONSULTORIO'].includes(user.rol);
 
   const getDateRange = () => {
     const now = new Date();
@@ -50,6 +56,16 @@ export default function Accounting() {
   const totalEfectivo = turnos?.filter((t: any) => t.pago?.metodo === 'EFECTIVO').reduce((acc: number, t: any) => acc + (t.pago?.monto || 0), 0) || 0;
   const totalTransferencia = turnos?.filter((t: any) => t.pago?.metodo === 'TRANSFERENCIA').reduce((acc: number, t: any) => acc + (t.pago?.monto || 0), 0) || 0;
   const totalIngresos = totalParticular + totalObraSocial;
+
+  const handleDeletePago = (turnoId: string) => {
+    if (!confirm('¿Eliminar solo el registro de cobro? El turno seguirá en la agenda.')) return;
+    deletePago.mutate(turnoId);
+  };
+
+  const handleDeleteTurno = (turnoId: string) => {
+    if (!confirm('¿Eliminar este turno por completo? Esta acción no se puede deshacer.')) return;
+    deleteTurno.mutate(turnoId);
+  };
 
   const exportPDF = () => {
     if (!turnos) return;
@@ -207,6 +223,7 @@ export default function Accounting() {
                 <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
                 <th className="px-8 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Método</th>
                 <th className="px-8 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Importe</th>
+                <th className="px-4 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-28">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -235,11 +252,33 @@ export default function Accounting() {
                   <td className="px-8 py-4 text-right">
                     <p className="text-lg font-black text-slate-900 italic tracking-tighter">${(t.pago?.monto || 0).toLocaleString()}</p>
                   </td>
+                  <td className="px-4 py-4 text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      {canManagePago && t.pago && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePago(t.id)}
+                          disabled={deletePago.isPending}
+                          className="text-[10px] font-black uppercase tracking-tight text-amber-700 hover:underline disabled:opacity-50"
+                        >
+                          Quitar cobro
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTurno(t.id)}
+                        disabled={deleteTurno.isPending}
+                        className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-tight text-red-600 hover:underline disabled:opacity-50"
+                      >
+                        <Trash2 size={12} /> Eliminar turno
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {(!turnos || turnos.length === 0) && (
                 <tr>
-                  <td colSpan={6} className="px-8 py-20 text-center">
+                  <td colSpan={7} className="px-8 py-20 text-center">
                     <div className="flex flex-col items-center gap-4 opacity-20">
                       <FileText size={64} />
                       <p className="font-black uppercase tracking-widest">No hay registros para este periodo</p>
@@ -251,7 +290,7 @@ export default function Accounting() {
             {turnos && turnos.length > 0 && (
               <tfoot className="bg-slate-900 text-white">
                 <tr>
-                  <td colSpan={5} className="px-8 py-6 text-right">
+                  <td colSpan={6} className="px-8 py-6 text-right">
                     <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Total Seleccionado:</span>
                   </td>
                   <td className="px-8 py-6 text-right">

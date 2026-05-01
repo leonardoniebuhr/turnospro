@@ -3,6 +3,7 @@ import {
   usePacientes, 
   useCreatePaciente, 
   useUpdatePaciente,
+  useDeletePaciente,
   useObraSociales
 } from '../hooks/useMedical';
 import { UserPlus, Search, Edit3, Trash2, X, Phone, Mail, Fingerprint, Calendar, Shield, MapPin, ClipboardList, Info } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function AdminPacientes() {
   const { data: obrasSociales } = useObraSociales();
   const createMut = useCreatePaciente();
   const updateMut = useUpdatePaciente();
+  const deleteMut = useDeletePaciente();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -79,6 +81,16 @@ export default function AdminPacientes() {
     } else {
       createMut.mutate(payload, { onSuccess: () => setIsModalOpen(false) });
     }
+  };
+
+  const handleDeletePatient = (p: any) => {
+    if (!confirm(`¿Eliminar a ${p.nombre} ${p.apellido}? Solo se puede si no tiene turnos ni recetas asociadas.`)) return;
+    deleteMut.mutate(p.id, {
+      onSuccess: () => {
+        setIsHistoryOpen(false);
+        setSelectedPatient(null);
+      }
+    });
   };
 
   return (
@@ -158,6 +170,15 @@ export default function AdminPacientes() {
                     >
                       <Edit3 size={18} />
                     </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleDeletePatient(p)}
+                      disabled={deleteMut.isPending}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      title="Eliminar paciente"
+                    >
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -180,7 +201,8 @@ export default function AdminPacientes() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-3xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-3xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
               <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div>
@@ -190,7 +212,7 @@ export default function AdminPacientes() {
                 <button onClick={() => setIsHistoryOpen(false)} className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 transition-colors"><X size={24} /></button>
               </div>
 
-              <div className="p-8 overflow-y-auto flex-1 space-y-4">
+              <div className="p-8 overflow-y-auto flex-1 min-h-0 space-y-4 overscroll-contain">
                 {selectedPatient.turnos?.length > 0 ? (
                   selectedPatient.turnos.sort((a:any, b:any) => new Date(b.fechaHoraInicio).getTime() - new Date(a.fechaHoraInicio).getTime()).map((t: any) => (
                     <div key={t.id} className="p-5 rounded-2xl border border-slate-100 bg-white hover:border-blue-200 transition-colors flex items-center justify-between">
@@ -241,14 +263,16 @@ export default function AdminPacientes() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Paciente' : 'Nuevo Paciente'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400"><X size={20} /></button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="p-8 space-y-6 overflow-y-auto flex-1 min-h-0 overscroll-contain">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-sm font-bold text-slate-700">Nombre</label>
@@ -330,14 +354,17 @@ export default function AdminPacientes() {
                   <label className="text-sm font-bold text-slate-700">Observaciones Administrativas</label>
                   <textarea rows={2} value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="Comentarios internos..." />
                 </div>
+              </div>
 
+                <div className="p-8 pt-4 border-t border-slate-100 shrink-0 bg-white">
                 <button 
                   type="submit" 
                   disabled={createMut.isPending || updateMut.isPending}
-                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all font-sans sticky bottom-0"
+                  className="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-100 hover:bg-blue-700 transition-all font-sans"
                 >
                   {editingId ? 'Guardar Cambios' : 'Crear Paciente'}
                 </button>
+                </div>
               </form>
             </motion.div>
           </div>

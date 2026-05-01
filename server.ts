@@ -458,11 +458,40 @@ async function startServer() {
   });
 
   app.delete('/api/turnos/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const rol = (req as any).user?.rol;
+    const userId = (req as any).user?.id;
+    if (!['SUPERADMIN', 'ADMIN_CONSULTORIO', 'RECEPCIONISTA', 'PROFESIONAL'].includes(rol)) {
+      return res.status(403).json({ message: 'No autorizado' });
+    }
+    if (rol === 'PROFESIONAL') {
+      const prof = await prisma.profesional.findUnique({ where: { usuarioId: userId } });
+      const turno = await prisma.turno.findUnique({ where: { id } });
+      if (!prof || !turno || turno.profesionalId !== prof.id) {
+        return res.status(403).json({ message: 'No podés eliminar turnos de otros profesionales.' });
+      }
+    }
     try {
-      await prisma.turno.delete({ where: { id: req.params.id } });
+      await prisma.$transaction([
+        prisma.pago.deleteMany({ where: { turnoId: id } }),
+        prisma.notificacion.deleteMany({ where: { turnoId: id } }),
+        prisma.turno.delete({ where: { id } })
+      ]);
       res.sendStatus(204);
     } catch (error) {
+      console.error('Error al eliminar turno:', error);
       res.status(400).json({ message: 'Error al eliminar turno' });
+    }
+  });
+
+  /** Quita solo el registro de pago/cobro (el turno sigue existiendo). */
+  app.delete('/api/turnos/:id/pago', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO']), async (req, res) => {
+    try {
+      await prisma.pago.deleteMany({ where: { turnoId: req.params.id } });
+      res.sendStatus(204);
+    } catch (error) {
+      console.error('Error al eliminar pago:', error);
+      res.status(400).json({ message: 'Error al eliminar el cobro' });
     }
   });
 
@@ -753,6 +782,37 @@ async function startServer() {
       res.json(paciente);
     } catch (error) {
       res.status(400).json({ message: 'Error al actualizar paciente' });
+    }
+  });
+
+  app.delete('/api/pacientes/:id', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO', 'RECEPCIONISTA']), async (req, res) => {
+    const { id } = req.params;
+    try {
+      const p = await prisma.paciente.findUnique({ where: { id } });
+      if (!p) return res.sendStatus(404);
+
+      const nTurnos = await prisma.turno.count({ where: { pacienteId: id } });
+      if (nTurnos > 0) {
+        return res.status(400).json({
+          message: `No se puede eliminar: el paciente tiene ${nTurnos} turno(s). Eliminá o cancelá los turnos primero.`
+        });
+      }
+      const nRecetas = await prisma.receta.count({ where: { pacienteId: id } });
+      if (nRecetas > 0) {
+        return res.status(400).json({ message: 'No se puede eliminar: tiene recetas asociadas.' });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        if (p.usuarioId) {
+          await tx.paciente.update({ where: { id }, data: { usuarioId: null } });
+          await tx.user.delete({ where: { id: p.usuarioId } }).catch(() => {});
+        }
+        await tx.paciente.delete({ where: { id } });
+      });
+      res.sendStatus(204);
+    } catch (error) {
+      console.error('Error al eliminar paciente:', error);
+      res.status(400).json({ message: 'Error al eliminar paciente' });
     }
   });
 

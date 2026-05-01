@@ -136,14 +136,16 @@ export default function AdminConsultorios() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-lg max-h-[90vh] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between shrink-0">
                 <h2 className="text-2xl font-bold text-slate-900">{editingId ? 'Editar Consultorio' : 'Añadir Consultorio'}</h2>
                 <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400"><X size={20} /></button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-4">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+              <div className="p-8 space-y-4 overflow-y-auto flex-1 min-h-0 overscroll-contain">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-sm font-bold text-slate-700">Número</label>
@@ -162,6 +164,8 @@ export default function AdminConsultorios() {
                   <label className="text-sm font-bold text-slate-700">Equipamiento (separado por coma)</label>
                   <textarea rows={3} value={formData.equipamiento} onChange={e => setFormData({...formData, equipamiento: e.target.value})} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
                 </div>
+              </div>
+                <div className="p-8 pt-4 border-t border-slate-100 shrink-0">
                 <button 
                   type="submit" 
                   disabled={createMut.isPending || updateMut.isPending}
@@ -169,6 +173,7 @@ export default function AdminConsultorios() {
                 >
                   {editingId ? 'Guardar Cambios' : 'Crear Consultorio'}
                 </button>
+                </div>
               </form>
             </motion.div>
           </div>
