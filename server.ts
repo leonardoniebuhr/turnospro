@@ -5,12 +5,13 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersercret_change_this_in_production';
+const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '7d') as SignOptions['expiresIn'];
 
 async function startServer() {
   const app = express();
@@ -134,7 +135,7 @@ async function startServer() {
       const jwtToken = jwt.sign(
         { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre },
         JWT_SECRET,
-        { expiresIn: '8h' }
+        { expiresIn: JWT_EXPIRES_IN }
       );
 
       return res.json({
@@ -375,7 +376,7 @@ async function startServer() {
       const token = jwt.sign(
         { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre },
         JWT_SECRET,
-        { expiresIn: '8h' }
+        { expiresIn: JWT_EXPIRES_IN }
       );
 
       res.json({
@@ -409,7 +410,7 @@ async function startServer() {
       const token = jwt.sign(
         { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre },
         JWT_SECRET,
-        { expiresIn: '8h' }
+        { expiresIn: JWT_EXPIRES_IN }
       );
 
       res.json({ token, user: { id: user.id, email: user.email, rol: user.rol, nombre: user.nombre, apellido: user.apellido } });

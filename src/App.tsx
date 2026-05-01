@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, MutationCache } from '@tanstack/react-query';
+import axios from 'axios';
 import { useAuthStore } from './store/authStore';
 import { 
   Users, 
@@ -32,7 +33,42 @@ import PublicBooking from './pages/PublicBooking';
 import Settings from './pages/Settings';
 import Accounting from './pages/Accounting';
 
-const queryClient = new QueryClient();
+function getApiErrorMessage(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    const data = err.response?.data as { message?: string } | undefined;
+    if (data?.message && typeof data.message === 'string') return data.message;
+    if (typeof err.response?.data === 'string') return err.response.data;
+    return err.message || 'Error de red o servidor.';
+  }
+  if (err instanceof Error) return err.message;
+  return 'Ocurrió un error inesperado.';
+}
+
+const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      if (!axios.isAxiosError(error) || typeof window === 'undefined') return;
+      const status = error.response?.status;
+      const msg = getApiErrorMessage(error);
+
+      if (status === 401) {
+        useAuthStore.getState().logout();
+        window.alert('Tu sesión expiró o no estás autenticado. Volvé a iniciar sesión.');
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/registro') {
+          window.location.assign('/login');
+        }
+        return;
+      }
+
+      if (status === 403) {
+        window.alert(msg || 'No tenés permisos para realizar esta acción.');
+        return;
+      }
+
+      window.alert(msg);
+    },
+  }),
+});
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuthStore();
