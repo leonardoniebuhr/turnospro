@@ -60,6 +60,10 @@ export default function PublicBooking() {
     queryFn: () => fetch(`${API_BASE}/config`).then(res => res.json())
   });
 
+  const whatsappNumber = (config?.whatsapp || '').toString().trim();
+  const whatsappDigits = whatsappNumber.replace(/[^\d]/g, '');
+  const whatsappUrl = whatsappDigits ? `https://wa.me/${whatsappDigits}` : '';
+
   const { data: turnosOcupados } = useQuery({
     queryKey: ['turnos-ocupados', selectedProf?.id, format(selectedDate, 'yyyy-MM-dd')],
     enabled: !!selectedProf,
@@ -522,10 +526,29 @@ export default function PublicBooking() {
                             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:scale-110 transition-transform">
                               <CreditCard size={48} />
                             </div>
-                            <p className="text-lg font-black uppercase italic tracking-tighter leading-none">PASO FUNDAMENTAL:</p>
-                            <p className="text-[13px] font-bold leading-tight text-slate-700">
-                              UNA VEZ TRANSFERIDO, DEBERÁS ENVIAR EL COMPROBANTE POR WHATSAPP AL CENTRO MÉDICO.
-                            </p>
+                            <p className="text-lg font-black uppercase italic tracking-tighter leading-none">WhatsApp del Centro</p>
+                            <div className="space-y-2">
+                              {whatsappDigits ? (
+                                <>
+                                  <a
+                                    href={whatsappUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-black uppercase tracking-widest text-[10px] transition-all"
+                                  >
+                                    <Phone size={14} />
+                                    Abrir WhatsApp
+                                  </a>
+                                  <p className="text-[13px] font-bold leading-tight text-white/90 select-all">
+                                    {whatsappDigits}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-[12px] font-bold leading-tight text-white/80">
+                                  (Sin número configurado)
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}

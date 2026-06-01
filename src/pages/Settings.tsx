@@ -14,11 +14,23 @@ const API_BASE = '/api';
 export default function Settings() {
   const queryClient = useQueryClient();
   const [success, setSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: config, isLoading } = useQuery({
     queryKey: ['config'],
     queryFn: () => fetch(`${API_BASE}/config`).then(res => res.json())
   });
+
+  const publicBookingLink = `${window.location.origin}/reservar-turno`;
+  const copyPublicLink = async () => {
+    try {
+      await navigator.clipboard.writeText(publicBookingLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      alert('No se pudo copiar el link. Por favor copialo manualmente.');
+    }
+  };
 
   const updateConfig = useMutation({
     mutationFn: (newConfig: any) => fetch(`${API_BASE}/config`, {
@@ -64,6 +76,38 @@ export default function Settings() {
       </div>
 
       <form onSubmit={handleSubmit} className="grid gap-6">
+        {/* Link Público */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Info className="text-blue-600" size={20} />
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Link Público de Reserva</h2>
+                <p className="text-xs text-slate-500 font-medium">Compartilo para que pidan turnos desde la web.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={copyPublicLink}
+              className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-lg shadow-blue-100"
+            >
+              {copied ? 'Copiado' : 'Copiar'}
+            </button>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Link</label>
+            <input
+              type="text"
+              value={publicBookingLink}
+              readOnly
+              onFocus={(e) => e.currentTarget.select()}
+              className="w-full bg-slate-50 px-4 py-3 rounded-2xl border border-slate-200 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-[10px] text-slate-400 italic">Tip: al tocar el campo, queda seleccionado para copiar rápido.</p>
+          </div>
+        </div>
+
         {/* Identidad */}
         <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
           <div className="flex items-center gap-3">

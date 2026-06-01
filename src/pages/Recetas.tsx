@@ -117,53 +117,84 @@ export default function Recetas() {
         <head>
           <title>Receta Médica - ${data.paciente.apellido}</title>
           <style>
-            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.6; }
-            .header { border-bottom: 2px solid #3b82f6; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-start; }
-            .prof-info h1 { margin: 0; color: #1d4ed8; font-size: 24px; }
-            .prof-info p { margin: 2px 0; font-size: 14px; color: #64748b; }
-            .date { font-weight: bold; color: #64748b; }
-            .pac-info { background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px; }
-            .pac-info h2 { margin: 0 0 10px 0; font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
-            .pac-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-            .pac-grid div span { font-weight: bold; color: #334155; }
-            .content { min-height: 300px; font-size: 18px; white-space: pre-wrap; padding: 10px; }
-            .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; pt: 20px; text-align: center; font-style: italic; color: #94a3b8; font-size: 12px; }
-            .signature { margin-top: 100px; border-top: 1px solid #1e293b; width: 200px; margin-left: auto; text-align: center; pt: 10px; }
+            @page { size: A4; margin: 18mm; }
+            html, body { height: auto; }
+            body {
+              font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+              color: #0f172a;
+              line-height: 1.55;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+              margin: 0;
+              padding: 0;
+            }
+            .page { max-width: 800px; margin: 0 auto; padding: 0; }
+            .header {
+              padding-bottom: 14px;
+              margin-bottom: 18px;
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 1px solid #cbd5e1;
+              position: relative;
+            }
+            .header:before{
+              content: "";
+              position: absolute;
+              left: 0;
+              right: 0;
+              bottom: -2px;
+              height: 2px;
+              background: #0f172a;
+              opacity: 0.08;
+            }
+            .prof-info h1 { margin: 0; color: #0f172a; font-size: 26px; letter-spacing: -0.02em; }
+            .prof-info p { margin: 2px 0; font-size: 13px; color: #475569; }
+            .date { font-weight: 700; color: #334155; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+            .pac-info { background: #f8fafc; padding: 16px 18px; border-radius: 12px; margin-bottom: 18px; border: 1px solid #e2e8f0; }
+            .pac-info h2 { margin: 0 0 10px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.14em; color: #64748b; }
+            .pac-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; font-size: 13px; color: #334155; }
+            .pac-grid div span { font-weight: 700; color: #0f172a; }
+            .content { min-height: 320px; font-size: 16px; white-space: pre-wrap; padding: 6px 2px; color: #0f172a; }
+            .footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 14px; text-align: center; font-style: italic; color: #94a3b8; font-size: 11px; }
+            .signature { margin-top: 80px; border-top: 1px solid #0f172a; width: 220px; margin-left: auto; text-align: center; padding-top: 8px; color: #334155; font-size: 12px; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="prof-info">
-              <h1>Dr. ${data.profesional.usuario.apellido} ${data.profesional.usuario.nombre}</h1>
-              <p>${data.profesional.especialidad}</p>
-              <p>M.N. ${data.profesional.matriculaNacional} ${data.profesional.matriculaProvincial ? `| M.P. ${data.profesional.matriculaProvincial}` : ''}</p>
+          <div class="page">
+            <div class="header">
+              <div class="prof-info">
+                <h1>Dr. ${data.profesional.usuario.apellido} ${data.profesional.usuario.nombre}</h1>
+                <p>${data.profesional.especialidad}</p>
+                <p>M.N. ${data.profesional.matriculaNacional} ${data.profesional.matriculaProvincial ? `| M.P. ${data.profesional.matriculaProvincial}` : ''}</p>
+              </div>
+              <div class="date">
+                ${format(new Date(data.createdAt), "dd 'de' MMMM, yyyy", { locale: es })}
+              </div>
             </div>
-            <div class="date">
-              ${format(new Date(data.createdAt), "dd 'de' MMMM, yyyy", { locale: es })}
+
+            <div class="pac-info">
+              <h2>Datos del Paciente</h2>
+              <div class="pac-grid">
+                <div>Paciente: <span>${data.paciente.apellido}, ${data.paciente.nombre}</span></div>
+                <div>DNI: <span>${data.paciente.dni}</span></div>
+                <div>Obra Social: <span>${data.paciente.obraSocial?.nombre || 'Particular'}</span></div>
+                <div>Nº Afiliado: <span>${data.paciente.numeroAfiliado || '-'}</span></div>
+              </div>
             </div>
-          </div>
 
-          <div class="pac-info">
-            <h2>Datos del Paciente</h2>
-            <div class="pac-grid">
-              <div>Paciente: <span>${data.paciente.apellido}, ${data.paciente.nombre}</span></div>
-              <div>DNI: <span>${data.paciente.dni}</span></div>
-              <div>Obra Social: <span>${data.paciente.obraSocial?.nombre || 'Particular'}</span></div>
-              <div>Nº Afiliado: <span>${data.paciente.numeroAfiliado || '-'}</span></div>
+            <div class="content">
+              ${data.diagnostico ? `<div style="margin-bottom: 16px;"><strong>Diagnóstico:</strong> ${data.diagnostico}</div>` : ''}
+              ${data.contenido}
             </div>
-          </div>
 
-          <div class="content">
-            ${data.diagnostico ? `<div style="margin-bottom: 20px;"><strong>Diagnóstico:</strong> ${data.diagnostico}</div>` : ''}
-            ${data.contenido}
-          </div>
+            <div class="signature">
+              Firma y Sello
+            </div>
 
-          <div class="signature">
-            Firma y Sello
-          </div>
-
-          <div class="footer">
-            Generado por TurnosPro - Sistema de Gestión Médica
+            <div class="footer">
+              Generado por TurnosPro - Sistema de Gestión Médica
+            </div>
           </div>
           <script>
             window.onload = function() { window.print(); window.close(); }

@@ -288,13 +288,17 @@ export default function Accounting() {
               )}
             </tbody>
             {turnos && turnos.length > 0 && (
-              <tfoot className="bg-slate-900 text-white">
+              <tfoot className="bg-slate-50 text-slate-900 border-t border-slate-200">
                 <tr>
                   <td colSpan={6} className="px-8 py-6 text-right">
-                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Total Seleccionado:</span>
+                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Total Seleccionado:</span>
                   </td>
                   <td className="px-8 py-6 text-right">
-                    <p className="text-2xl font-black italic tracking-tighter">${totalIngresos.toLocaleString()}</p>
+                    <span className="inline-flex items-center justify-end px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                      <p className="text-2xl font-black italic tracking-tighter text-slate-900">
+                        ${totalIngresos.toLocaleString()}
+                      </p>
+                    </span>
                   </td>
                 </tr>
               </tfoot>

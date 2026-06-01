@@ -165,9 +165,24 @@ export default function ProfessionalCalendar() {
     if (!selectedEvent || !editStartTime || !editEndTime) return;
     
     try {
-      const baseDate = format(new Date(selectedEvent.resource.fechaHoraInicio), 'yyyy-MM-dd');
+      const startRaw = selectedEvent.resource?.fechaHoraInicio;
+      if (!startRaw) {
+        alert('No se puede modificar el horario: el turno no tiene una fecha/hora válida.');
+        return;
+      }
+
+      const baseDate = format(new Date(startRaw), 'yyyy-MM-dd');
       const newStart = new Date(`${baseDate}T${editStartTime}:00`);
       const newEnd = new Date(`${baseDate}T${editEndTime}:00`);
+
+      if (Number.isNaN(newStart.getTime()) || Number.isNaN(newEnd.getTime())) {
+        alert('Error al actualizar el horario. Por favor revisa el formato.');
+        return;
+      }
+      if (newEnd <= newStart) {
+        alert('El horario de fin debe ser mayor al de inicio.');
+        return;
+      }
 
       updateTurno.mutate({ 
         id: selectedEvent.id, 
@@ -186,9 +201,25 @@ export default function ProfessionalCalendar() {
 
   const startEditingTime = () => {
     if (selectedEvent?.resource) {
-      setEditStartTime(format(new Date(selectedEvent.resource.fechaHoraInicio), 'HH:mm'));
-      setEditEndTime(format(new Date(selectedEvent.resource.fechaHoraFin), 'HH:mm'));
-      setIsEditingTime(true);
+      try {
+        const startRaw = selectedEvent.resource?.fechaHoraInicio;
+        const endRaw = selectedEvent.resource?.fechaHoraFin;
+        if (!startRaw || !endRaw) {
+          alert('No se puede editar el horario: el turno no tiene hora de inicio/fin válida.');
+          return;
+        }
+        const startDate = new Date(startRaw);
+        const endDate = new Date(endRaw);
+        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+          alert('No se puede editar el horario: la fecha/hora del turno es inválida.');
+          return;
+        }
+        setEditStartTime(format(startDate, 'HH:mm'));
+        setEditEndTime(format(endDate, 'HH:mm'));
+        setIsEditingTime(true);
+      } catch {
+        alert('No se puede editar el horario por un error de formato.');
+      }
     }
   };
 
