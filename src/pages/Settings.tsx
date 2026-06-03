@@ -8,6 +8,7 @@ import {
   Info
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import api from '../lib/api';
 
 const API_BASE = '/api';
 
@@ -33,14 +34,10 @@ export default function Settings() {
   };
 
   const updateConfig = useMutation({
-    mutationFn: (newConfig: any) => fetch(`${API_BASE}/config`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(newConfig)
-    }).then(res => res.json()),
+    mutationFn: async (newConfig: any) => {
+      const { data } = await api.put('/config', newConfig);
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['config'] });
       setSuccess(true);

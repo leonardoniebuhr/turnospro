@@ -28,7 +28,7 @@ async function startServer() {
     if (!token) return res.sendStatus(401);
 
     jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-      if (err) return res.sendStatus(403);
+      if (err) return res.status(401).json({ message: 'Token expirado o inválido' });
       req.user = user;
       next();
     });
