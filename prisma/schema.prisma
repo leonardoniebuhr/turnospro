@@ -163,10 +163,27 @@ model Notificacion {
 }
 
 model ObraSocial {
-  id     String   @id @default(uuid())
-  nombre String
-  codigo String   @unique
-  activo Boolean  @default(true)
+  id                    String   @id @default(uuid())
+  nombre                String
+  codigo                String   @unique
+  cuit                  String?
+  telefono              String?
+  email                 String?
+  direccion             String?
+  web                   String?
+  tipoCobertura         String   @default("OBRA_SOCIAL") // PREPAGA, OBRA_SOCIAL, SINDICAL, MONOTRIBUTO, PAMI
+  planDefault           String?
+  arancelConsulta       Float    @default(0)
+  arancelPractica       Float    @default(0)
+  coseguro              Float    @default(0)
+  requiereAutorizacion  Boolean  @default(false)
+  requiereDerivacion    Boolean  @default(false)
+  especialidadesCubiertas String @default("[]") // JSON array
+  observaciones         String?
+  contactoNombre        String?
+  contactoTelefono      String?
+  activo                Boolean  @default(true)
+  createdAt             DateTime @default(now())
 
   pacientes  Paciente[]
   coberturas CoberturaObraSocial[]

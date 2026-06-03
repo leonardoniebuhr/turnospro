@@ -258,6 +258,38 @@ export function useObraSociales() {
   });
 }
 
+export function useCreateObraSocial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post('/obras-sociales', payload);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['obras-sociales'] })
+  });
+}
+
+export function useUpdateObraSocial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: any) => {
+      const { data } = await api.put(`/obras-sociales/${id}`, payload);
+      return data;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['obras-sociales'] })
+  });
+}
+
+export function useDeleteObraSocial() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/obras-sociales/${id}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['obras-sociales'] })
+  });
+}
+
 export function useAccounting(filters: { start?: string, end?: string, profesionalId?: string }) {
   return useQuery({
     queryKey: ['accounting', filters],

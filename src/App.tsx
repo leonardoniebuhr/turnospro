@@ -15,7 +15,8 @@ import {
   MapPin,
   ClipboardList,
   FileText,
-  DollarSign
+  DollarSign,
+  Shield
 } from 'lucide-react';
 
 // Pages (will implement next)
@@ -32,6 +33,7 @@ import Recetas from './pages/Recetas';
 import PublicBooking from './pages/PublicBooking';
 import Settings from './pages/Settings';
 import Accounting from './pages/Accounting';
+import ObrasSociales from './pages/ObrasSociales';
 
 function getApiErrorMessage(err: unknown): string {
   if (axios.isAxiosError(err)) {
@@ -85,6 +87,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     { label: 'Contabilidad', icon: DollarSign, path: '/contabilidad', roles: ['SUPERADMIN', 'ADMIN_CONSULTORIO'] },
     { label: 'Profesionales', icon: BriefcaseMedical, path: '/admin-profesionales', roles: ['SUPERADMIN', 'ADMIN_CONSULTORIO'] },
     { label: 'Consultorios', icon: MapPin, path: '/admin-consultorios', roles: ['SUPERADMIN', 'ADMIN_CONSULTORIO'] },
+    { label: 'Obras Sociales', icon: Shield, path: '/obras-sociales', roles: ['SUPERADMIN', 'ADMIN_CONSULTORIO'] },
     { label: 'Pacientes', icon: UserSquare2, path: '/pacientes', roles: ['SUPERADMIN', 'RECEPCIONISTA', 'PROFESIONAL'] },
     { label: 'Recetas y Órdenes', icon: FileText, path: '/recetas', roles: ['SUPERADMIN', 'PROFESIONAL', 'RECEPCIONISTA'] },
     { label: 'Configuración', icon: SettingsIcon, path: '/configuracion', roles: ['SUPERADMIN', 'ADMIN_CONSULTORIO'] },
@@ -197,6 +200,11 @@ export default function App() {
           <Route path="/pacientes" element={
             <PrivateRoute roles={['SUPERADMIN', 'RECEPCIONISTA', 'PROFESIONAL']}>
               <Layout><AdminPacientes /></Layout>
+            </PrivateRoute>
+          } />
+          <Route path="/obras-sociales" element={
+            <PrivateRoute roles={['SUPERADMIN', 'ADMIN_CONSULTORIO']}>
+              <Layout><ObrasSociales /></Layout>
             </PrivateRoute>
           } />
           <Route path="/recetas" element={

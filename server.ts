@@ -167,13 +167,24 @@ async function startServer() {
 
   app.put('/api/config', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO']), async (req, res) => {
     try {
+      // Only allow known fields – prevents crash when 'id' leaks in from frontend state
+      const { nombreClinica, horarioApertura, horarioCierre, mensajeDefaultTurno, whatsapp, diasNoLaborales } = req.body;
+      const safeData: any = {};
+      if (nombreClinica !== undefined) safeData.nombreClinica = nombreClinica;
+      if (horarioApertura !== undefined) safeData.horarioApertura = horarioApertura;
+      if (horarioCierre !== undefined) safeData.horarioCierre = horarioCierre;
+      if (mensajeDefaultTurno !== undefined) safeData.mensajeDefaultTurno = mensajeDefaultTurno;
+      if (whatsapp !== undefined) safeData.whatsapp = whatsapp;
+      if (diasNoLaborales !== undefined) safeData.diasNoLaborales = diasNoLaborales;
+
       const config = await prisma.configGlobal.upsert({
         where: { id: 'singleton' },
-        update: req.body,
-        create: { id: 'singleton', ...req.body }
+        update: safeData,
+        create: { id: 'singleton', ...safeData }
       });
       res.json(config);
     } catch (error) {
+      console.error('Error al actualizar configuración:', error);
       res.status(400).json({ message: 'Error al actualizar configuración' });
     }
   });
@@ -661,10 +672,113 @@ async function startServer() {
     }
   });
 
-  // Obras Sociales
+  // Obras Sociales – CRUD completo
   app.get('/api/obras-sociales', authenticateToken, async (req, res) => {
-    const os = await prisma.obraSocial.findMany({ where: { activo: true } });
+    const os = await prisma.obraSocial.findMany({ where: { activo: true }, orderBy: { nombre: 'asc' } });
     res.json(os);
+  });
+
+  app.get('/api/obras-sociales/:id', authenticateToken, async (req, res) => {
+    try {
+      const os = await prisma.obraSocial.findUnique({
+        where: { id: req.params.id },
+        include: { pacientes: { select: { id: true, nombre: true, apellido: true, dni: true } } }
+      });
+      if (!os) return res.sendStatus(404);
+      res.json(os);
+    } catch (error) {
+      res.status(400).json({ message: 'Error al obtener obra social' });
+    }
+  });
+
+  app.post('/api/obras-sociales', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO']), async (req, res) => {
+    try {
+      const { nombre, codigo, cuit, telefono, email, direccion, web, tipoCobertura, planDefault,
+              arancelConsulta, arancelPractica, coseguro, requiereAutorizacion, requiereDerivacion,
+              especialidadesCubiertas, observaciones, contactoNombre, contactoTelefono } = req.body;
+
+      const os = await prisma.obraSocial.create({
+        data: {
+          nombre,
+          codigo,
+          cuit: cuit || null,
+          telefono: telefono || null,
+          email: email || null,
+          direccion: direccion || null,
+          web: web || null,
+          tipoCobertura: tipoCobertura || 'OBRA_SOCIAL',
+          planDefault: planDefault || null,
+          arancelConsulta: parseFloat(arancelConsulta) || 0,
+          arancelPractica: parseFloat(arancelPractica) || 0,
+          coseguro: parseFloat(coseguro) || 0,
+          requiereAutorizacion: !!requiereAutorizacion,
+          requiereDerivacion: !!requiereDerivacion,
+          especialidadesCubiertas: especialidadesCubiertas || '[]',
+          observaciones: observaciones || null,
+          contactoNombre: contactoNombre || null,
+          contactoTelefono: contactoTelefono || null
+        }
+      });
+      res.json(os);
+    } catch (error: any) {
+      console.error('Error al crear obra social:', error);
+      if (error?.code === 'P2002') {
+        return res.status(400).json({ message: 'Ya existe una obra social con ese código.' });
+      }
+      res.status(400).json({ message: 'Error al crear obra social' });
+    }
+  });
+
+  app.put('/api/obras-sociales/:id', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { nombre, codigo, cuit, telefono, email, direccion, web, tipoCobertura, planDefault,
+              arancelConsulta, arancelPractica, coseguro, requiereAutorizacion, requiereDerivacion,
+              especialidadesCubiertas, observaciones, contactoNombre, contactoTelefono, activo } = req.body;
+
+      const os = await prisma.obraSocial.update({
+        where: { id },
+        data: {
+          nombre,
+          codigo,
+          cuit: cuit || null,
+          telefono: telefono || null,
+          email: email || null,
+          direccion: direccion || null,
+          web: web || null,
+          tipoCobertura: tipoCobertura || 'OBRA_SOCIAL',
+          planDefault: planDefault || null,
+          arancelConsulta: parseFloat(arancelConsulta) || 0,
+          arancelPractica: parseFloat(arancelPractica) || 0,
+          coseguro: parseFloat(coseguro) || 0,
+          requiereAutorizacion: !!requiereAutorizacion,
+          requiereDerivacion: !!requiereDerivacion,
+          especialidadesCubiertas: especialidadesCubiertas || '[]',
+          observaciones: observaciones || null,
+          contactoNombre: contactoNombre || null,
+          contactoTelefono: contactoTelefono || null,
+          ...(activo !== undefined ? { activo } : {})
+        }
+      });
+      res.json(os);
+    } catch (error: any) {
+      console.error('Error al actualizar obra social:', error);
+      if (error?.code === 'P2002') {
+        return res.status(400).json({ message: 'Ya existe una obra social con ese código.' });
+      }
+      res.status(400).json({ message: 'Error al actualizar obra social' });
+    }
+  });
+
+  app.delete('/api/obras-sociales/:id', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO']), async (req, res) => {
+    try {
+      // Soft delete
+      await prisma.obraSocial.update({ where: { id: req.params.id }, data: { activo: false } });
+      res.sendStatus(204);
+    } catch (error) {
+      console.error('Error al eliminar obra social:', error);
+      res.status(400).json({ message: 'Error al eliminar obra social' });
+    }
   });
 
   // Recipes (Recetas)
