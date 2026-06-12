@@ -432,6 +432,75 @@ async function startServer() {
   });
 
   // --- Consultorios ---
+  app.get('/api/stats', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO', 'PROFESIONAL', 'RECEPCIONISTA']), async (req, res) => {
+    try {
+      const { period } = req.query; // dia, semana, mes
+      const now = new Date();
+      let start, end;
+
+      if (period === 'dia') {
+        start = new Date(now.setHours(0, 0, 0, 0));
+        end = new Date(now.setHours(23, 59, 59, 999));
+      } else if (period === 'semana') {
+        const firstDay = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+        firstDay.setHours(0, 0, 0, 0);
+        const lastDay = new Date(firstDay);
+        lastDay.setDate(lastDay.getDate() + 6);
+        lastDay.setHours(23, 59, 59, 999);
+        start = firstDay;
+        end = lastDay;
+      } else { // mes
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      }
+
+      const turnos = await prisma.turno.findMany({
+        where: { fechaHoraInicio: { gte: start, lte: end } },
+        include: { pago: true }
+      });
+
+      const totalPacientes = await prisma.paciente.count();
+      const turnosMes = turnos.length;
+      const ingresos = turnos.reduce((acc, t) => acc + (t.pago?.monto || 0), 0);
+      const turnosWeb = turnos.filter(t => t.esPublico || t.canalReserva === 'WEB').length;
+
+      // Group by day for chart (simple logic)
+      const flujoTurnosMap: any = {};
+      turnos.forEach(t => {
+        const day = new Date(t.fechaHoraInicio).toLocaleDateString('es-ES', { weekday: 'short' });
+        flujoTurnosMap[day] = (flujoTurnosMap[day] || 0) + 1;
+      });
+      const daysOrder = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+      const flujoTurnos = daysOrder.map(d => ({ name: d, turnos: flujoTurnosMap[d] || 0 }));
+
+      // Recent notifications (we'll just use the last created Turnos as a mock if we don't have real notifs)
+      // Or if Notificacion model exists, use it. The schema has `Notificacion`.
+      const notificaciones = await prisma.notificacion.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      });
+
+      res.json({
+        turnosMes,
+        ingresos,
+        turnosWeb,
+        totalPacientes,
+        flujoTurnos,
+        notificaciones: notificaciones.length > 0 ? notificaciones.map(n => ({
+          type: n.tipo,
+          msg: n.mensaje,
+          time: new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: n.leido ? 'OK' : 'PENDIENTE'
+        })) : [
+          { type: 'Info', msg: 'Sistema iniciado correctamente.', time: '08:00', status: 'OK' }
+        ]
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching stats' });
+    }
+  });
+
   app.get('/api/consultorios', authenticateToken, async (req, res) => {
     const consultorios = await prisma.consultorio.findMany({ where: { activo: true } });
     res.json(consultorios);

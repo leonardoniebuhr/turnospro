@@ -295,7 +295,7 @@ export default function Accounting() {
                   </td>
                   <td className="px-8 py-6 text-right">
                     <span className="inline-flex items-center justify-end px-4 py-2 rounded-2xl bg-white border border-slate-200 shadow-sm">
-                      <p className="text-2xl font-black italic tracking-tighter text-slate-900">
+                      <p className="text-2xl font-black italic tracking-tighter text-slate-900 whitespace-nowrap">
                         ${totalIngresos.toLocaleString()}
                       </p>
                     </span>

@@ -193,7 +193,7 @@ export default function Recetas() {
             </div>
 
             <div class="footer">
-              Generado por TurnosPro - Sistema de Gestión Médica
+              Generado por TurnosPro By Leo - Sistema de Gestión Médica
             </div>
           </div>
           <script>

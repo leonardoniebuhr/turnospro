@@ -19,14 +19,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion } from 'motion/react';
 
-const data = [
-  { name: 'Lun', turnos: 12 },
-  { name: 'Mar', turnos: 19 },
-  { name: 'Mie', turnos: 15 },
-  { name: 'Jue', turnos: 22 },
-  { name: 'Vie', turnos: 30 },
-  { name: 'Sab', turnos: 10 },
-];
+// Remove hardcoded data array
 
 export default function Dashboard() {
   const { user } = useAuthStore();
@@ -107,7 +100,7 @@ export default function Dashboard() {
             </div>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data}>
+                <AreaChart data={stats?.flujoTurnos || []}>
                   <defs>
                     <linearGradient id="colorTurnos" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
@@ -191,11 +184,7 @@ export default function Dashboard() {
            <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
             <h3 className="text-lg font-bold text-slate-800 mb-6">Actividad de Notificaciones</h3>
             <div className="space-y-6">
-              {[
-                { type: 'Conf.', msg: 'Turno confirmado WhatsApp', time: '10:15', status: 'OK' },
-                { type: 'Recor.', msg: 'Recordatorio enviado SMS', time: '09:30', status: 'OK' },
-                { type: 'Pago', msg: 'Expiración de pago MercadoPago', time: '08:45', status: 'ERR' },
-              ].map((act, i) => (
+              {(stats?.notificaciones || []).map((act: any, i: number) => (
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${act.status === 'OK' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
