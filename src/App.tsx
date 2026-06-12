@@ -103,7 +103,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           <div className="bg-blue-600 p-2 rounded-lg text-white">
             <BriefcaseMedical size={24} />
           </div>
-          <span className="font-bold text-slate-800 text-lg uppercase tracking-tight">TurnosPro</span>
+          <span className="font-bold text-slate-800 text-lg tracking-tight">TurnosPro By Leo</span>
         </div>
         
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
