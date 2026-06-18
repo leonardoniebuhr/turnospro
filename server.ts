@@ -20,6 +20,40 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
+  // --- Ensure default admins exist ---
+  try {
+    const eliHash = await bcrypt.hash('1234', 10);
+    await prisma.user.upsert({
+      where: { email: 'Eli@turnospro.com' },
+      update: {},
+      create: {
+        email: 'Eli@turnospro.com',
+        dni: 'eli-admin',
+        passwordHash: eliHash,
+        nombre: 'Eli',
+        apellido: 'Admin',
+        rol: 'SUPERADMIN',
+      }
+    });
+
+    const adminHash = await bcrypt.hash('TurnosPro', 10);
+    await prisma.user.upsert({
+      where: { email: 'admin@turnospro.com' },
+      update: {},
+      create: {
+        email: 'admin@turnospro.com',
+        dni: 'admin-pro',
+        passwordHash: adminHash,
+        nombre: 'Admin',
+        apellido: 'Principal',
+        rol: 'SUPERADMIN',
+      }
+    });
+    console.log('Default admins ensured.');
+  } catch (err) {
+    console.error('Error ensuring default admins:', err);
+  }
+
   // --- Auth Middleware ---
   const authenticateToken = (req: any, res: any, next: any) => {
     const authHeader = req.headers['authorization'];
@@ -430,6 +464,34 @@ async function startServer() {
       res.status(500).json({ message: 'Internal server error' });
     }
   });
+
+  // Auth: Change Password
+  app.post('/api/auth/change-password', async (req, res) => {
+    const { email, currentPassword, newPassword } = req.body;
+    try {
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+      
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
+
+      const newPasswordHash = await bcrypt.hash(newPassword, 10);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newPasswordHash }
+      });
+
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
 
   // --- Consultorios ---
   app.get('/api/stats', authenticateToken, authorize(['SUPERADMIN', 'ADMIN_CONSULTORIO', 'PROFESIONAL', 'RECEPCIONISTA']), async (req, res) => {
