@@ -5,7 +5,8 @@ import {
   Clock, 
   MessageSquare, 
   Save,
-  Info
+  Info,
+  Download
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import api from '../lib/api';
@@ -56,6 +57,26 @@ export default function Settings() {
       whatsapp: formData.get('whatsapp'),
     };
     updateConfig.mutate(data);
+  };
+
+  const [isDownloading, setIsDownloading] = useState(false);
+  const handleDownloadBackup = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await api.get('/admin/backup', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'backup_turnospro.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+    } catch (error) {
+      console.error('Error al descargar el backup:', error);
+      alert('Error al descargar el backup. Asegúrese de tener permisos de Superadministrador.');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   if (isLoading) return <div className="p-8 text-slate-400 font-bold">Cargando configuración...</div>;
@@ -187,6 +208,29 @@ export default function Settings() {
             />
             <p className="text-[10px] text-slate-400 italic">Número para que los pacientes envíen sus comprobantes. Incluir código de país sin el +.</p>
           </div>
+        </div>
+
+        {/* Backup de Datos */}
+        <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100 space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Download className="text-blue-600" size={20} />
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Backup de Base de Datos</h2>
+                <p className="text-xs text-slate-500 font-medium">Descargar toda la información de la plataforma en Excel.</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleDownloadBackup}
+              disabled={isDownloading}
+              className="px-6 py-3 bg-green-600 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] hover:bg-green-700 transition-all shadow-lg shadow-green-100 disabled:opacity-50 flex items-center gap-2"
+            >
+              <Download size={16} />
+              {isDownloading ? 'Generando...' : 'Descargar Excel'}
+            </button>
+          </div>
+          <p className="text-[10px] text-slate-400 italic">El archivo Excel incluirá solapas con Profesionales, Consultorios, Pacientes, Turnos, Contabilidad, Obras Sociales y Recetas.</p>
         </div>
 
         <div className="flex items-center justify-between gap-4">

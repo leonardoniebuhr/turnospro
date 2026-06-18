@@ -7,6 +7,7 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
+import * as XLSX from 'xlsx';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const prisma = new PrismaClient();
@@ -179,6 +180,45 @@ async function startServer() {
     } catch (error) {
       console.error('Error en bootstrap:', error);
       return res.status(500).json({ message: 'No se pudo crear el superadmin.' });
+    }
+  });
+
+  // --- Backup (Excel) ---
+  app.get('/api/admin/backup', authenticateToken, authorize(['SUPERADMIN']), async (req, res) => {
+    try {
+      const [
+        users, profesionales, consultorios, pacientes, 
+        turnos, pagos, obrasSociales, recetas
+      ] = await Promise.all([
+        prisma.user.findMany(),
+        prisma.profesional.findMany(),
+        prisma.consultorio.findMany(),
+        prisma.paciente.findMany(),
+        prisma.turno.findMany(),
+        prisma.pago.findMany(),
+        prisma.obraSocial.findMany(),
+        prisma.receta.findMany()
+      ]);
+
+      const wb = XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(users), "Usuarios");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(profesionales), "Profesionales");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(consultorios), "Consultorios");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pacientes), "Pacientes");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(turnos), "Turnos");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(pagos), "Pagos (Contabilidad)");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(obrasSociales), "Obras Sociales");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recetas), "Recetas");
+
+      const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', 'attachment; filename="backup_turnospro.xlsx"');
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error generando backup Excel:', error);
+      res.status(500).json({ message: 'Error al generar el backup' });
     }
   });
 
